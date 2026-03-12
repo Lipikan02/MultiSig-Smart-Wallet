@@ -1,3 +1,8 @@
+This is a contract that can transfer funds on behalf of a group of n people, but at least k of them must authorize the payment first. For example, in 2-of-3 authorization, there are n=3 authorized addresses, and funds cannot be sent until at least k=2 of them have authorized the transaction.
+
+Initial code from Bo Waggoner's CSCI 4240
+
+
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**

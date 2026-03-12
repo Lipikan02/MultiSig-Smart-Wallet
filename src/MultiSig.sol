@@ -39,19 +39,62 @@ contract MultiSig {
     // Propose a new payment
     function proposePayment(uint256 _paymentId, address _recipient, uint256 _amount) external {
         // TODO: implement
+        //require(_balances[msg.sender] >= _value, "Insufficient balance");
+        //require(!authorized[_authorized[i]], "authorized addresses are not unique");
+        require(authorized[msg.sender], "Not authorized");
+        require(!idToExists[_paymentId], "Payment ID already in use");
+        require(_recipient != address(0), "Invalid recipient");
+
+        //mapping (uint256 => Payment) public idToPayment;
+        idToPayment[_paymentId] = Payment ({
+            recipient: _recipient,
+            amount: _amount,
+            numAuths: 0,
+            isExecuted: false
+        });
+
+        //mapping (uint256 => bool) public idToExists;
+        idToExists[_paymentId] = true;
     }
 
     // Authorize a payment
     function authorizePayment(uint256 paymentId) external {
         // TODO: implement
+        require(authorized[msg.sender], "Not authorized");
+        require(idToExists[paymentId], "Payment ID not in use");
+        require(!idToPayment[paymentId].isExecuted, "Payment ID not in use");
+        //if aith alrady exists error since already used
+        //mapping(uint256 => mapping (address => bool)) paymentAuths;
+        require(!paymentAuths[paymentId][msg.sender], "Already authenticated by user");
+
+        paymentAuths[paymentId][msg.sender] = true;
+        idToPayment[paymentId].numAuths += 1;
+
+
     }
 
     // Execute a payment
     function executePayment(uint256 paymentId) external {
         // TODO: implement
 
+        require(idToExists[paymentId], "Payment ID not in use");
+        //storage is a keyword that tells the EVM (Ethereum Virtual Machine) where to look for data
+        Payment storage payment = idToPayment[paymentId];
+
+        require(!payment.isExecuted, "Payment ID not in use");
+        require(payment.numAuths >= authsRequired, "Not enough athentications");
+        require(address(this).balance >= payment.amount, "Insufficient balance");
+
         // Hint: use the following code to send 5 wei to anAddress
         // (bool sent, ) = anAddress.call{value: 5}("");
+
+        //do this now for now quick reentrant attacks
+        payment.isExecuted = true;
+        (bool sent, ) = payment.recipient.call{value: payment.amount}("");
+
+        //check if succesful
+        require(sent, "Failed to send Ether");
+
     }
 }
 

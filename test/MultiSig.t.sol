@@ -44,5 +44,43 @@ contract MultiSigTester is Test {
     function test_2of3() public {
         _tryKofN(2, 3);
     }
+
+    function test_SecurityFailures() public {
+        // Setup: 2-of-3 multisig
+        address[] memory users = new address[](3);
+        users[0] = myAddresses[0];
+        users[1] = myAddresses[1];
+        users[2] = myAddresses[2];
+        
+        MultiSig multisig = new MultiSig(users, 2);
+        address attacker = address(0xBAD);
+
+        // 1. RULE: Only authorized address can propose
+        // vm.expectRevert tells Foundry the NEXT line MUST fail
+        vm.prank(attacker);
+        vm.expectRevert("Not authorized"); 
+        multisig.proposePayment(999, recipient, 10);
+
+        // 2. RULE: No paymentId may be proposed twice
+        vm.prank(users[0]);
+        multisig.proposePayment(100, recipient, 10);
+        
+        vm.prank(users[1]);
+        vm.expectRevert("Payment ID already in use");
+        multisig.proposePayment(100, recipient, 10);
+
+        // 3. RULE: One user cannot authorize twice (Double Voting)
+        vm.prank(users[0]);
+        multisig.authorizePayment(100);
+        
+        vm.prank(users[0]);
+        vm.expectRevert("Already authenticated by user");
+        multisig.authorizePayment(100);
+
+        // 4. RULE: Cannot execute without enough authorizations (k=2)
+        // Currently only users[0] has authorized.
+        vm.expectRevert("Not enough athentications");
+        multisig.executePayment(100);
+    }
 }
 
